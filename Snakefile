@@ -48,10 +48,13 @@ rule fit_model:
         cmd = f"conda run -n {cfg.py_env} python",
         model = str(cfg.ROOT) + '/{experiment}/{gene_names}/models',
         n_epochs = expand('{n_epochs}', n_epochs=cfg.HYPERPARAM['n_epochs']),
+        batch_sizes = expand('{batch_sizes}', batch_sizes=cfg.HYPERPARAM['batch_sizes']),
+        learning_rates = expand('{learning_rates}', learning_rates=cfg.HYPERPARAM['learning_rates']),
+        n_kernels = expand('{n_kernels}', n_kernels=cfg.HYPERPARAM['n_kernels']),
     shell:
         """
         {params.cmd} {input.script} -i {input.queries} --out_model {params.model} --out_tsv {output.metrics} \
-            --n_epochs {params.n_epochs} 1> {log}
+            --n_epochs {params.n_epochs} --batch_sizes {params.batch_sizes} --learning_rates {params.learning_rates} --n_kernels {params.n_kernels} 1> {log}
         """
 
 rule data_prepare:
