@@ -1,15 +1,15 @@
 ROOT: 'output/snakemake'
 ANNOTATIONS: 'annotations'
-py_env : multibind
+py_env : mubind
 timing: false
 
 HYPERPARAM:
     # n_kernels: [1, 2, 3]
     n_kernels: [1]
     w: 15
-    n_epochs: 12
+    n_epochs: 20
     early_stopping: 100
-    n_sample: 100 
+    n_sample: 1000
 
 EXPERIMENT:
   SELEX:
