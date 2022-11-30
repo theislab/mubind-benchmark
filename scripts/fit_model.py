@@ -1,4 +1,4 @@
-import multibind as mb
+import mubind as mb
 import numpy as np
 import pandas as pd
 import torch
