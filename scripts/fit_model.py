@@ -57,10 +57,15 @@ if __name__ == '__main__':
             
             model_path = f'{out_model}/{hyperparam_id}_{os.path.basename(counts_path).replace(".tsv.gz", ".h5")}'
             pkl_path = model_path.replace('.h5', '.pkl')
-                            
-            data = pd.read_csv(counts_path, sep='\t', index_col=0)
-            n_rounds = len(data.columns) - 3
-            n_batches = len(set(data.batch))
+      
+            data = pd.read_csv(counts_path, sep=',' if 'simulated' in counts_path else '\t', index_col=0)
+
+            if 'simulated' not in counts_path:
+                n_rounds = len(data.columns) - 3
+                n_batches = len(set(data.batch))
+            else:
+                n_rounds = 1
+                n_batches = 1
             print('# rounds', n_rounds)
             print('# batches', n_batches)
 
