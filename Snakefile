@@ -4,7 +4,7 @@ from pipeline_config import *
 from os.path import join
 
 configfile: "config.yaml"
-cfg = ParsedConfig(config)
+cfg = ParsedConfig(config, gene_names='gene_names_test.txt')
 
 
 rule all:
