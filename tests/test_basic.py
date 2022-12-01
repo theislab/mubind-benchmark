@@ -5,8 +5,11 @@ import torch.optim as topti
 import torch.utils.data as tdata
 import os
 
-def test_simdata_train():
+def test_configtest_exists():
+    output_state = os.system('snakemake --configfile config_test.yaml -c1 --dry-run ')
+    assert output_state == 0
 
-    # print('here...l')
-    os.system('snakemake --configfile config.yaml --dry-run')
+def test_configtest_executes():
+    output_state = os.system('snakemake --configfile config_test.yaml -c1')
+    assert output_state == 0
 
