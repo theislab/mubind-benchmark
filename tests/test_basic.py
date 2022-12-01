@@ -8,5 +8,5 @@ import os
 def test_simdata_train():
 
     # print('here...l')
-    os.system('snakemake --config config.yaml --dry-run')
+    os.system('snakemake --configfile config.yaml --dry-run')
 
