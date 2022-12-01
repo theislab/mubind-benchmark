@@ -1,3 +1,2 @@
 CTCF
-ALX1
-SELEX_SIM
+
