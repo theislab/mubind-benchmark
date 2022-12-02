@@ -30,6 +30,8 @@ if __name__ == '__main__':
     parser.add_argument('--early_stopping', default=100, help='# epochs for early stopping', type=int)
     parser.add_argument('--is_count_data', default=True)
 
+    parser.add_argument('--outdense', default=False)
+
     parser.add_argument('--n_epochs', nargs='+', default=[50], help='# of epochs for training', type=int)
     parser.add_argument('--batch_sizes', nargs='+', default=[32], help='batch sizes for training', type=int)
     parser.add_argument('--learning_rates', nargs='+', default=[0.001], help='learning rates for training', type=float)
@@ -98,13 +100,15 @@ if __name__ == '__main__':
             r2 = mb.pl.kmer_enrichment(model, train, k=8, show=False)
             print("R^2:", r2)
 
-            for idx, val in enumerate(model.r2_history):
-                metrics.append(list(r.values[:-1]) + [batch_size, lr, idx, n_kernels, -1, val, -1])
+            if args.outdense:
+                # print r2 for all epochs
+                for idx, val in enumerate(model.r2_history):
+                    metrics.append(list(r.values[:-1]) + [batch_size, lr, idx, n_kernels, -1, val, -1])
 
-            metrics.append(
-                list(r.values[:-1]) + [batch_size, lr, n_epochs, n_kernels, model.best_loss, r2, model.total_time])
+            best_r2 = max(model.r2_history)
+            metrics.append(list(r.values[:-1]) + [batch_size, lr, n_epochs, n_kernels, model.best_loss, best_r2, model.total_time])
 
-        metrics = pd.DataFrame(metrics, columns=list(queries.columns[:-1]) + ['batch_size', 'learning_rate', 'n_epochs',
+    metrics = pd.DataFrame(metrics, columns=list(queries.columns[:-1]) + ['batch_size', 'learning_rate', 'n_epochs',
                                                                               'n_kernels', 'best_loss', 'r_2',
                                                                               'running_time'])
     metrics.to_csv(args.out_tsv)
