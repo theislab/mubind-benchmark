@@ -3,7 +3,7 @@ from pipeline_config import *
 
 from os.path import join
 
-configfile: "config.yaml"
+configfile: "config_test.yaml"
 cfg = ParsedConfig(config, gene_names='gene_names_test.txt')
 
 

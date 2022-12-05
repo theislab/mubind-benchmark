@@ -36,7 +36,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_epochs', nargs='+', default=[50], help='# of epochs for training', type=int)
     parser.add_argument('--batch_sizes', nargs='+', default=[32], help='batch sizes for training', type=int)
     parser.add_argument('--learning_rates', nargs='+', default=[0.001], help='learning rates for training', type=float)
-    parser.add_argument('--n_kernels', nargs='+', default=[32], help='# of kernels for training', type=int)
+    parser.add_argument('--n_kernels', nargs='+', default=[1], help='# of kernels for training', type=int)
 
     # Use a GPU if available, as it should be faster.
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -107,18 +107,23 @@ if __name__ == '__main__':
                 model = pickle.load(open(pkl_path, 'rb'))
                 model.load_state_dict(torch.load(model_path))
 
-            r2 = mb.pl.kmer_enrichment(model, train, k=8, show=False)
-            print("R^2:", r2)
+            r2_dict = mb.pl.kmer_enrichment(model, train, k=8, show=False)
+            print("R^2:", r2_dict)
 
             if args.outdense:
                 # print r2 for all epochs
                 for idx, val in enumerate(model.r2_history):
                     metrics.append(list(r.values[:-1]) + [batch_size, lr, idx, n_kernels, -1, val, -1])
 
-            best_r2 = max(model.r2_history)
-            metrics.append(list(r.values[:-1]) + [batch_size, lr, n_epochs, n_kernels, model.best_loss, best_r2, model.total_time])
+            # TODO
+            # best_r2 = max(model.r2_history)
+            metrics.append(list(r.values[:-1]) + [batch_size, lr, n_epochs, n_kernels, model.best_loss, 
+                                                  r2_dict['r2_counts'], r2_dict['r2_foldchange'], 
+                                                  r2_dict['r2_enr'], r2_dict['r2_fc'], r2_dict['pearson_foldchange'],
+                                                  model.total_time])
 
     metrics = pd.DataFrame(metrics, columns=list(queries.columns[:-1]) + ['batch_size', 'learning_rate', 'n_epochs',
-                                                                              'n_kernels', 'best_loss', 'r_2',
+                                                                              'n_kernels', 'best_loss', 
+                                                                              'r2_counts', 'r2_foldchange', 'r2_enr', 'r2_fc', 'pearson_foldchange',
                                                                               'running_time'])
     metrics.to_csv(args.out_tsv)
