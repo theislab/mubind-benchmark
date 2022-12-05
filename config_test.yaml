@@ -5,16 +5,17 @@ timing: false
 
 HYPERPARAM:
     # n_kernels: [1, 2, 3]
-    n_kernels: [1]
+    n_epochs: [10]
+    batch_sizes: [32]
+    learning_rates: [0.01]
+    n_kernels: [1, 2, 3]
     w: 15
-    n_epochs: 12
     early_stopping: 100
     n_sample: 100
 
 EXPERIMENT:
   SELEX:
     count_data: True
-
-#  PBM:
-#    count_data: False
+  PBM:
+    count_data: False
 

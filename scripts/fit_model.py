@@ -28,6 +28,7 @@ if __name__ == '__main__':
     parser.add_argument('--out_model', required=True, help='directory to save learned model')
     parser.add_argument('--out_tsv', required=True, help='output path for metrics')
     parser.add_argument('--early_stopping', default=100, help='# epochs for early stopping', type=int)
+    parser.add_argument('--experiment', help='the experiment type we are going to model', required=True)
     parser.add_argument('--is_count_data', default=True)
 
     parser.add_argument('--outdense', default=False)
@@ -44,6 +45,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     queries = pd.read_csv(args.queries, sep='\t', index_col=0)
+
+    print('# queries', queries.shape[0])
 
     out_model = args.out_model
     if not os.path.exists(out_model):
@@ -64,21 +67,28 @@ if __name__ == '__main__':
             data = pd.read_csv(counts_path, sep=',' if 'simulated' in counts_path else '\t', index_col=0)
 
             if 'simulated' not in counts_path:
-                n_rounds = len(data.columns) - 3
+                n_rounds = len(data.columns) - 2
                 n_batches = len(set(data.batch))
             else:
                 n_rounds = 1
                 n_batches = 1
-            print('# rounds', n_rounds)
-            print('# batches', n_batches)
+            # print('# rounds', n_rounds)
+            # print('# batches', n_batches)
 
-            print(data.shape)
+            # print(data.shape)
             # data = data.head(1000)
             # print(data.shape)
 
-            labels = list(data.columns[:n_rounds + 1])
-            print('labels', labels)
-            dataset = mb.datasets.SelexDataset(data, n_rounds=n_rounds, labels=labels)
+            labels = list(data.columns[:n_rounds])
+            # print('labels', labels)
+            # print(args.experiment)
+
+            dataset = None
+            if args.experiment == 'SELEX':
+                dataset = mb.datasets.SelexDataset(data, n_rounds=n_rounds, labels=labels)
+            elif args.experiment == 'PBM':
+                dataset = mb.datasets.SelexDataset(data, n_rounds=n_rounds, labels=labels, enr_series=False)
+
             train = tdata.DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True)
             # train_test = tdata.DataLoader(dataset=dataset, batch_size=1, shuffle=False)
             # train_test = tdata.DataLoader(dataset=dataset, batch_size=1, shuffle=False)
