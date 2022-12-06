@@ -6,7 +6,7 @@ from os.path import join
 
 
 class ParsedConfig:
-    def __init__(self, config, gene_names='gene_names_test.txt'):
+    def __init__(self, config, gene_names='gene_names.txt'):
 
         # TODO: define and check schema of config
 
