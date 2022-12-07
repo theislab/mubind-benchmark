@@ -75,14 +75,14 @@ if __name__ == '__main__':
                 print(tf)
 
                 for library, grp in data.groupby('library'):
-                    data_sel_tf = grp[(grp['tf.name'] == tf)]  # & (grp['cycle'] == '1')]
+                    data_sel_tf = grp[(grp['tf_name'] == tf)]  # & (grp['cycle'] == '1')]
                     if data_sel_tf.shape[0] == 0:
                         continue
 
                     print('loading', tf, ':', library)
 
                     reads_tf = mb.bindome.datasets.SELEX.load_read_counts(tf, data=data_sel_tf)
-                    data_sel_zero = grp[(grp['cycle'] == 0) & grp['library'].isin(set(grp[grp['tf.name'] == tf][
+                    data_sel_zero = grp[(grp['cycle'] == 0) & grp['library'].isin(set(grp[grp['tf_name'] == tf][
                                                                                           'library']))]  # & grp['accession'].isin(set(grp[grp['tf_name'] == tf]['accession']))]
                     reads_zero = mb.bindome.datasets.SELEX.load_read_counts(data=data_sel_zero, library=library)
 
