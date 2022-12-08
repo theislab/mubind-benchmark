@@ -11,6 +11,19 @@ rule all:
     input:
         files = expand(str(cfg.ROOT) + '/{experiment}/{gene_names}/metrics.tsv',
                        gene_names=cfg.GENE_NAMES, experiment=cfg.EXPERIMENT),
+        script = 'scripts/generate_figures.py',
+    output:
+        # results = 'figures/{gene_names}_full.png',
+        results = directory(str(cfg.ROOT) + '/figures'),
+    params: 
+        cmd = f'conda run -n {cfg.py_env} python',
+    shell: "{params.cmd} {input.script} -i {input.files} -o {output.results}"
+
+
+rule merge_results:
+    input:
+        files = expand(str(cfg.ROOT) + '/{experiment}/{gene_names}/metrics.tsv',
+                       gene_names=cfg.GENE_NAMES, experiment=cfg.EXPERIMENT),
         script = "scripts/merge_metrics.py",
     output:
         results = str(cfg.ROOT) + '/results.tsv.gz'
@@ -18,22 +31,8 @@ rule all:
         cmd = f"conda run -n {cfg.py_env} python",
     shell: "{params.cmd} {input.script} -i {input.files} -o {output.results}"
 
-# rule metrics:
-#     input: cfg.get_all_file_patterns("metrics")
-#     message: "Collect all integrated metrics"
 
-# all_metrics = rules.metrics.input
-
-# rule merge_metrics:
-#     input:
-#         tables = all_metrics,
-#         results = expand(str(cfg.ROOT) + '/' + str('{gene_names}') + '/results.tsv.gz', gene_names=cfg.GENE_NAMES),
-#         script = "scripts/merge_metrics.py"
-#     output:
-#     message: "Merge all metrics"
-#     params:
-#         cmd = f"conda run -n {cfg.py_env} python"
-#     shell: "{params.cmd} {input.script} -o {output} --root {cfg.ROOT}"
+# removed commented out parts for simplicity
 
 rule fit_model:
     input:
