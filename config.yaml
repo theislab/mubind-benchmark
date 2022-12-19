@@ -1,5 +1,5 @@
 ROOT: 'output/snakemake'
-ANNOTATIONS: 'annotations'
+ANNOTATIONS: '/lustre/groups/ml01/datasets/annotations'
 py_env : mubind
 timing: false
 

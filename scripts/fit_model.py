@@ -98,7 +98,7 @@ if __name__ == '__main__':
             print(exists(model_path), model_path)
             if not exists(model_path):
                 print('training starts...')
-                model, best_loss = mb.tl.train_iterative(train, device, show_logo=False, log_each=50,
+                model, best_loss = mb.tl.optimize_iterative(train, device, show_logo=False, log_each=50,
                                                          num_epochs=n_epochs, n_kernels=n_kernels,
                                                          early_stopping=args.early_stopping, lr=lr)
                 torch.save(model.state_dict(), model_path)
