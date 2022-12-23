@@ -16,5 +16,5 @@ EXPERIMENT:
   SELEX:
     count_data: True
   PBM:
-    count_data: False
+    count_data: True
 
