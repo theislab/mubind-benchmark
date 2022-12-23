@@ -15,6 +15,6 @@ HYPERPARAM:
 EXPERIMENT:
   SELEX:
     count_data: True
-  # PBM:
-    # count_data: False
+  PBM:
+    count_data: False
 
