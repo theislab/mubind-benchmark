@@ -22,7 +22,7 @@ if __name__ == '__main__':
     parser.add_argument('--annot', help='annotations directory')
     parser.add_argument('--experiment', help='the code of the experiment type e.g. SELEX/PBM', required=True)
     parser.add_argument('--tf_name', required=True)
-    parser.add_argument('--n_sample', default=None, type=int)
+    parser.add_argument('--n_sample', nargs='+', default=[None], type=int)
     parser.add_argument('-o', '--output', required=True, help='output directory for counts and queries metadata file')
 
     args = parser.parse_args()
@@ -46,29 +46,32 @@ if __name__ == '__main__':
         if args.experiment == 'PBM':
             print('loading PBM...')
             ad = bd.datasets.PBM.uniprobe()
-            ad_sel = ad[ad.obs.index.str.lower().str.contains(args.tf_name.lower()), :]
-            for next_pbm in ad_sel.obs_names:
-                next_data = ad_sel.to_df()
-                next_data = next_data[next_data.index == next_pbm]
-                next_data = next_data.T
-                next_data = next_data[~np.isnan(next_data).any(axis=1)]
-                next_outpath = str(queries_directory) + '/' + next_pbm + '.tsv.gz'
-                next_data.index.name = 'seq'
-                # next_data = next_data.head(10000)
-                if args.n_sample is not None and args.n_sample != -1:
-                    next_data = next_data.sample(n=args.n_sample)
+            if ad is not None: # check that h5ad is available in the annotations directory
+                ad_sel = ad[ad.obs.index.str.lower().str.contains(args.tf_name.lower()), :]
+                for next_pbm in ad_sel.obs_names:
+                    next_data = ad_sel.to_df()
+                    next_data = next_data[next_data.index == next_pbm]
+                    next_data = next_data.T
+                    next_data = next_data[~np.isnan(next_data).any(axis=1)]
+                    next_outpath = str(queries_directory) + '/' + next_pbm + '.tsv.gz'
+                    next_data.index.name = 'seq'
+                    # next_data = next_data.head(10000)
+                    if args.n_sample is not None and args.n_sample != -1:
+                        next_data = next_data.sample(n=args.n_sample)
 
-                # assign batch and data type
-                next_data['batch'] = 1
-                next_data['is_count_data'] = 0
+                    # assign batch and data type
+                    next_data['batch'] = 1
+                    next_data['is_count_data'] = 0
 
-                next_data.to_csv(next_outpath, sep='\t')
-                queries.append([args.tf_name, np.nan, next_pbm, next_outpath, next_data.shape[0]])
+                    next_data.to_csv(next_outpath, sep='\t')
+                    queries.append([args.tf_name, np.nan, next_pbm, next_outpath, next_data.shape[0]])
 
         if args.experiment == 'SELEX':
+
             data = bd.bindome.datasets.SELEX.get_data()
             tf_query = args.tf_name
             tf_queries = {tf_query}
+            # assert False
             model_by_k = {}
             for tf in tf_queries:  # set(data['tf_name']):
                 if 'ZERO' in tf:
@@ -76,6 +79,8 @@ if __name__ == '__main__':
                 print(tf)
 
                 for library, grp in data.groupby('library'):
+                    # print(grp)
+
                     try:
                         data_sel_tf = grp[(grp['tf_name'] == tf)]  # & (grp['cycle'] == '1')]
                     except:
@@ -84,6 +89,9 @@ if __name__ == '__main__':
                         continue
 
                     print('loading', tf, ':', library)
+
+                    # print(grp)
+                    # assert False
 
                     reads_tf = mb.bindome.datasets.SELEX.load_read_counts(tf, data=data_sel_tf)
                     try:
@@ -105,44 +113,67 @@ if __name__ == '__main__':
 
                         n_rounds = 1
 
-                        next_data = reads_zero[k_r0].copy()
+                        next_r0 = reads_zero[k_r0].copy()
                         new_cols = ['seq', k_r0]
+                        next_data = None
                         for k_tf in reads_tf:
-                            next_data = next_data.merge(reads_tf[k_tf], on='seq', how='outer').fillna(
-                                0)  # .astype(int)
+                            # print(next_r0.head())
+                            # print(reads_tf[k_tf].head())
+                            next_data = (next_r0 if next_data is None else next_data).merge(reads_tf[k_tf],
+                                                                                            on='seq',
+                                                                                            how='outer').fillna(0)
                             new_cols.append(k_tf)
-                        # next_data = reads_zero[k_r0].merge(reads_tf[k_tf], on='seq', how='outer').fillna(0) # .astype(int)
-                        # new_cols = ['seq', k_r0, k_tf]
                         next_data.columns = new_cols
-                        for i, k in enumerate(new_cols[1:]):
+
+                        for i, k in enumerate(new_cols[1:]): # convert all columns into int
                             next_data[k] = next_data[k].astype(int)
-                            # next_data[i] = next_data[k].astype(int)
 
-                        # next_data = next_data.head(10000)
-                        if args.n_sample is not None and args.n_sample != -1:
-                            next_data = next_data.sample(n=args.n_sample)
-
-                        # print(next_data.shape)
-                        next_data = next_data.set_index('seq')
+                        # print('next data')
                         # print(next_data.head())
+                        for n_sample in args.n_sample:
+                            # next_data = next_data.head(10000)
+                            if args.n_sample is not None and args.n_sample != -1:
 
-                        # not needed for the current model, because the enrichment is not predicted
-                        # next_data = mb.tl.calculate_enrichment(next_data, cols=next_data.columns[1:])
+                                select_random = True
+                                if next_data.shape[0] < n_sample:
+                                    print('ignore next n_sample (smaller than input)')
+                                    continue
+                                elif not select_random and next_data.shape[1] > 2: # sort by descending enrichment (seq + [0, 1, 2, ...])
+                                    fg = (next_data[next_data.columns[2:]].max(axis=1) + 1)
+                                    # print(next_data[next_data.columns[1]])
+                                    bg = next_data[next_data.columns[1]] + 1
 
-                        # assign batch and data type
-                        next_data['batch'] = 1
-                        next_data['is_count_data'] = 1
+                                    enrichment_descending = (fg / bg).sort_values(ascending=False)
+                                    next_data_sample = next_data.reindex(enrichment_descending.index[:n_sample]).copy()
+                                else:
+                                    next_data_sample = next_data.sample(n=n_sample)
 
-                        next_outpath = str(queries_directory) + '/' + k_model + '.tsv.gz'
-                        next_data.to_csv(next_outpath, sep='\t')
+                                print('# total/sampled reads:', next_data.shape[0], next_data_sample.shape[0])
+                            else:
+                                next_data_sample = next_data.copy()
 
-                        # repeats for each query (e.g. two in ALX1), want to save sep file for each query so should save file here
-                        queries.append([tf_query, k_r0, library, next_outpath, next_data.shape[0]])
-                        total_counts = next_data.sum(axis=1)
-                        # total_counts = pd.DataFrame(total_counts, columns=['query', 'total_counts'])
-                        total_counts.to_csv('/'.join(queries_tsv_outpath.split('/')[:-1]) + f'/{k_r0}_counts.tsv', sep='\t')
+                            # print(next_data.shape)
+                            next_data_sample = next_data_sample.set_index('seq')
+                            # print(next_data.head())
 
-    queries = pd.DataFrame(queries, columns=['tf_name', 'r0', 'library', 'counts_path', 'n_sample'])
+                            # not needed for the current model, because the enrichment is not predicted
+                            # next_data = mb.tl.calculate_enrichment(next_data, cols=next_data.columns[1:])
+
+                            # assign batch and data type
+                            next_data_sample['batch'] = 1
+                            next_data_sample['is_count_data'] = 1
+
+                            next_outpath = str(queries_directory) + '/' + k_model + '_%s.tsv.gz' % n_sample
+                            next_data_sample.to_csv(next_outpath, sep='\t')
+
+                            # repeats for each query (e.g. two in ALX1), want to save sep file for each query so should save file here
+                            queries.append([tf_query, k_r0, library, next_outpath, n_sample, next_data_sample.shape[0]])
+                            total_counts = next_data_sample.sum(axis=0)
+                            # total_counts = pd.DataFrame(total_counts, columns=['query', 'total_counts'])
+                            total_counts.to_csv('/'.join(queries_tsv_outpath.split('/')[:-1]) +
+                                                f'/{k_r0}_%s_counts.tsv' % n_sample, sep='\t')
+
+    queries = pd.DataFrame(queries, columns=['tf_name', 'r0', 'library', 'counts_path', 'n_sample_parm', 'n_sample_obs'])
     queries.to_csv(queries_tsv_outpath, sep='\t')
     sys.exit()
 
