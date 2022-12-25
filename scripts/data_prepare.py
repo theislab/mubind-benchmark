@@ -133,12 +133,8 @@ if __name__ == '__main__':
                         for n_sample in args.n_sample:
                             # next_data = next_data.head(10000)
                             if args.n_sample is not None and args.n_sample != -1:
-
                                 select_random = True
-                                if next_data.shape[0] < n_sample:
-                                    print('ignore next n_sample (smaller than input)')
-                                    continue
-                                elif not select_random and next_data.shape[1] > 2: # sort by descending enrichment (seq + [0, 1, 2, ...])
+                                if not select_random and next_data.shape[1] > 2: # sort by descending enrichment (seq + [0, 1, 2, ...])
                                     fg = (next_data[next_data.columns[2:]].max(axis=1) + 1)
                                     # print(next_data[next_data.columns[1]])
                                     bg = next_data[next_data.columns[1]] + 1
@@ -146,7 +142,8 @@ if __name__ == '__main__':
                                     enrichment_descending = (fg / bg).sort_values(ascending=False)
                                     next_data_sample = next_data.reindex(enrichment_descending.index[:n_sample]).copy()
                                 else:
-                                    next_data_sample = next_data.sample(n=n_sample)
+                                    print('sampling randomly...')
+                                    next_data_sample = next_data.sample(n=min(n_sample, next_data.shape[0]))
 
                                 print('# total/sampled reads:', next_data.shape[0], next_data_sample.shape[0])
                             else:
