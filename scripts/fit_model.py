@@ -36,6 +36,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--use_mono', help='using mononucleotide features', default=True)
     parser.add_argument('--use_dinuc', help='using dinucleotide features', default=False)
+    parser.add_argument('--dinuc_mode', help='using dinucleotide features', default='local')
     parser.add_argument('--n_epochs', nargs='+', default=[50], help='# of epochs for training', type=int)
     parser.add_argument('--batch_sizes', nargs='+', default=[32], help='batch sizes for training', type=int)
     parser.add_argument('--learning_rates', nargs='+', default=[0.001], help='learning rates for training', type=float)
@@ -92,16 +93,22 @@ if __name__ == '__main__':
             if not exists(model_path):
                 print('training starts...')
                 wd = [0.01, ] + [0.001] * (n_kernels - 1)
-                model, best_loss = mb.tl.optimize_iterative(train, device, show_logo=False, log_each=50,
+                model, best_loss = mb.tl.optimize_iterative(train,
+                                                            device,
+                                                            show_logo=False, log_each=50,
                                                             num_epochs=n_epochs, n_kernels=n_kernels, weight_decay=wd,
                                                             use_mono=args.use_mono, use_dinuc=args.use_dinuc,
-                                                         early_stopping=args.early_stopping, lr=lr)
+                                                            dinuc_mode=args.dinuc_mode,
+                                                            early_stopping=args.early_stopping, lr=lr)
+
                 torch.save(model.state_dict(), model_path)
                 pickle.dump(model, open(pkl_path, 'wb'))
 
             else:
+                print('loading model from output pkl...')
                 model = pickle.load(open(pkl_path, 'rb'))
-                model.load_state_dict(torch.load(model_path))
+                # print('loading model from output h5...')
+                # model.load_state_dict(torch.load(model_path))
 
             # save conv2Ds and predictions
             if not os.path.exists(motif_img_path) or True:
@@ -110,19 +117,26 @@ if __name__ == '__main__':
                 warnings.filterwarnings("ignore")
                 mb.pl.conv(model, show=False, figsize=[20, 10])
                 plt.savefig(motif_img_path)
+                plt.clf() # necessary to avoid memory kill
                 plt.close()
 
                 # scatter k=-1
                 mb.pl.kmer_enrichment(model, train, log_scale=False, style='scatter', ylab='t1', xlab='p1', show=False)
+                print(motif_img_path.replace('_filters.png', '_scatter.png'))
+                print(os.path.exists(motif_img_path.replace('_filters.png', '_scatter.png')))
                 plt.savefig(motif_img_path.replace('_filters.png', '_scatter.png'))
+                plt.clf() # necessary to avoid memory kill
                 plt.close()
 
                 # scatter k=9
                 mb.pl.kmer_enrichment(model, train, log_scale=False, style='scatter', show=False, k=9)
                 plt.savefig(motif_img_path.replace('_filters.png', '_scatter_k9.png'))
+                plt.clf() # necessary to avoid memory kill
                 plt.close()
 
             r2_dict = mb.pl.kmer_enrichment(model, train, k=8, show=False)
+            plt.clf()
+            plt.close()
             print("R^2:", r2_dict)
 
             if args.outdense:

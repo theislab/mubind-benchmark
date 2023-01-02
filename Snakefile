@@ -3,8 +3,10 @@ from pipeline_config import *
 
 from os.path import join
 
-configfile: "config_test.yaml"
-cfg = ParsedConfig(config, gene_names='gene_names_test.txt')
+configfile: "config.yaml"
+cfg = ParsedConfig(config, gene_names='gene_names_full.txt')
+# cfg = ParsedConfig(config, gene_names='gene_names_cardiac_complexes.txt')
+# cfg = ParsedConfig(config, gene_names='gene_names_test.txt')
 
 
 rule all:
@@ -15,7 +17,7 @@ rule all:
     output:
         # results = 'figures/{gene_names}_full.png',
         results = directory(str(cfg.ROOT) + '/figures'),
-    params: 
+    params:
         cmd = f'conda run -n {cfg.py_env} python',
     shell: "{params.cmd} {input.script} -i {input.files} -o {output.results}"
 
@@ -47,13 +49,16 @@ rule fit_model:
         cmd = f"conda run -n {cfg.py_env} python",
         model = str(cfg.ROOT) + '/{experiment}/{gene_names}/models',
         experiment = '{experiment}',
+        use_mono = expand('{n_epochs}', n_epochs=cfg.HYPERPARAM['use_mono']),
+        use_dinuc = expand('{n_epochs}', n_epochs=cfg.HYPERPARAM['use_dinuc']),
+        dinuc_mode = expand('{dinuc_mode}', dinuc_mode=cfg.HYPERPARAM['dinuc_mode']),
         n_epochs = expand('{n_epochs}', n_epochs=cfg.HYPERPARAM['n_epochs']),
         batch_sizes = expand('{batch_sizes}', batch_sizes=cfg.HYPERPARAM['batch_sizes']),
         learning_rates = expand('{learning_rates}', learning_rates=cfg.HYPERPARAM['learning_rates']),
         n_kernels = expand('{n_kernels}', n_kernels=cfg.HYPERPARAM['n_kernels']),
     shell:
         """
-        {params.cmd} {input.script} -i {input.queries} --experiment {params.experiment} --out_model {params.model} --out_tsv {output.metrics} --n_epochs {params.n_epochs} --batch_sizes {params.batch_sizes} --learning_rates {params.learning_rates} --n_kernels {params.n_kernels} 1> {log}
+        {params.cmd} {input.script} -i {input.queries} --experiment {params.experiment} --out_model {params.model} --out_tsv {output.metrics} --use_mono {params.use_mono} --use_dinuc {params.use_dinuc} --dinuc_mode {params.dinuc_mode} --n_epochs {params.n_epochs} --batch_sizes {params.batch_sizes} --learning_rates {params.learning_rates} --n_kernels {params.n_kernels} 1> {log}
         """
 
 rule data_prepare:

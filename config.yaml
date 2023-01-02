@@ -7,12 +7,13 @@ HYPERPARAM:
     n_epochs: [200]
     batch_sizes: [512]
     learning_rates: [0.01] # , 0.01, 0.1]
-    n_kernels: [3]
-    w: 15
+    n_kernels: [2]
+    w: 20
     early_stopping: 100
     use_mono: True
-    use_dinuc: True
-    n_sample: [5_000,] # 15_000] #  10_000] #  100_000, 1_000_000, 10_000_000]
+    use_dinuc: False
+    dinuc_mode: local
+    n_sample: [10_000,] # 15_000] #  10_000] #  100_000, 1_000_000, 10_000_000]
 
 EXPERIMENT:
   SELEX:
