@@ -115,7 +115,7 @@ if __name__ == '__main__':
                 # disable warnings
                 import warnings
                 warnings.filterwarnings("ignore")
-                mb.pl.conv(model, show=False, figsize=[20, 10])
+                mb.pl.conv(model, show=False, figsize=[20, 10], dinuc_mode='complex')
                 plt.savefig(motif_img_path)
                 plt.clf() # necessary to avoid memory kill
                 plt.close()

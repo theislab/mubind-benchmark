@@ -11,7 +11,7 @@ HYPERPARAM:
     w: 20
     early_stopping: 100
     use_mono: True
-    use_dinuc: False
+    use_dinuc: False,
     dinuc_mode: local
     n_sample: [10_000,] # 15_000] #  10_000] #  100_000, 1_000_000, 10_000_000]
 

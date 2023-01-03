@@ -1,17 +1,16 @@
 import pathlib
 from pipeline_config import *
-
 from os.path import join
 
-configfile: "config.yaml"
-cfg = ParsedConfig(config, gene_names='gene_names_full.txt')
+# configfile: "config_test.yaml"
+# cfg = ParsedConfig(config, gene_names='gene_names_all.txt')
 # cfg = ParsedConfig(config, gene_names='gene_names_cardiac_complexes.txt')
-# cfg = ParsedConfig(config, gene_names='gene_names_test.txt')
+cfg = ParsedConfig(config, gene_names='gene_names_test.txt')
 
 
 rule all:
     input:
-        files = expand(str(cfg.ROOT) + '/{experiment}/{gene_names}/metrics.tsv',
+        files = expand(str(cfg.ROOT) + '/{gene_names}/{experiment}/fit_model/metrics.tsv',
                        gene_names=cfg.GENE_NAMES, experiment=cfg.EXPERIMENT),
         script = 'scripts/generate_figures.py',
     output:
@@ -24,7 +23,7 @@ rule all:
 
 rule merge_results:
     input:
-        files = expand(str(cfg.ROOT) + '/{experiment}/{gene_names}/metrics.tsv',
+        files = expand(str(cfg.ROOT) + '/{gene_names}/{experiment}/fit_model/metrics.tsv',
                        gene_names=cfg.GENE_NAMES, experiment=cfg.EXPERIMENT),
         script = "scripts/merge_metrics.py",
     output:
@@ -39,15 +38,15 @@ rule merge_results:
 rule fit_model:
     input:
         script = "scripts/fit_model.py",
-        queries = str(cfg.ROOT) + '/{experiment}/{gene_names}/queries.tsv'
+        queries = str(cfg.ROOT) + '/{gene_names}/{experiment}/prepare/queries.tsv'
     output:
-        metrics = str(cfg.ROOT) + '/{experiment}/{gene_names}/metrics.tsv',
+        metrics = str(cfg.ROOT) + '/{gene_names}/{experiment}/fit_model/metrics.tsv',
     message: "Merge all metrics"
-    log:
-        str(cfg.ROOT) + '/{experiment}/{gene_names}/fit_model.out.txt'
+    # log:
+    #     str(cfg.ROOT) + '/logs/{gene_names}/{experiment}/fit_model.out.txt'
     params:
         cmd = f"conda run -n {cfg.py_env} python",
-        model = str(cfg.ROOT) + '/{experiment}/{gene_names}/models',
+        model = str(cfg.ROOT) + '/{gene_names}/{experiment}/models',
         experiment = '{experiment}',
         use_mono = expand('{n_epochs}', n_epochs=cfg.HYPERPARAM['use_mono']),
         use_dinuc = expand('{n_epochs}', n_epochs=cfg.HYPERPARAM['use_dinuc']),
@@ -58,14 +57,14 @@ rule fit_model:
         n_kernels = expand('{n_kernels}', n_kernels=cfg.HYPERPARAM['n_kernels']),
     shell:
         """
-        {params.cmd} {input.script} -i {input.queries} --experiment {params.experiment} --out_model {params.model} --out_tsv {output.metrics} --use_mono {params.use_mono} --use_dinuc {params.use_dinuc} --dinuc_mode {params.dinuc_mode} --n_epochs {params.n_epochs} --batch_sizes {params.batch_sizes} --learning_rates {params.learning_rates} --n_kernels {params.n_kernels} 1> {log}
+        {params.cmd} {input.script} -i {input.queries} --experiment {params.experiment} --out_model {params.model} --out_tsv {output.metrics} --use_mono {params.use_mono} --use_dinuc {params.use_dinuc} --dinuc_mode {params.dinuc_mode} --n_epochs {params.n_epochs} --batch_sizes {params.batch_sizes} --learning_rates {params.learning_rates} --n_kernels {params.n_kernels} # 1> {log}
         """
 
 rule data_prepare:
     input:
         script = "scripts/data_prepare.py",
     output:
-        queries = str(cfg.ROOT) + '/{experiment}/{gene_names}/queries.tsv'
+        queries = str(cfg.ROOT) + '/{gene_names}/{experiment}/prepare/queries.tsv'
     message:
         """
         Preparing adata
@@ -73,8 +72,8 @@ rule data_prepare:
         parameters: {params}
         output: {output}
         """
-    log:
-        str(cfg.ROOT) + '/{experiment}/{gene_names}/data_prepare.out.txt'
+    # log:
+    #     str(cfg.ROOT) + '/logs/{gene_names}/{experiment}/data_prepare.out.txt'
     params:
         cmd       = f"conda run -n {cfg.py_env} python",
         # tf_name = expand('{gene_names}', gene_names=cfg.GENE_NAMES),
@@ -85,6 +84,6 @@ rule data_prepare:
         n_sample = expand('{n_sample}', n_sample=cfg.HYPERPARAM['n_sample']),
     shell:
         """
-        {params.cmd} {input.script} --annot {params.annot} --experiment {params.experiment} --tf_name {params.tf_name} -o {output.queries} --n_sample {params.n_sample} 1> {log}
+        {params.cmd} {input.script} --annot {params.annot} --experiment {params.experiment} --tf_name {params.tf_name} -o {output.queries} --n_sample {params.n_sample} # 1> {log}
         """
 
