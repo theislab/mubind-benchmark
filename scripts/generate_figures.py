@@ -20,15 +20,22 @@ if __name__ == '__main__':
     print('Starting plotting...')
     tf_names = []
     results = dict()
+    n_paths = 0
     for f in args.input:
         # iterates over metrics file for genes
         tf_name = f.split('/')[-2]
         tf_names.append(tf_name)
         metrics = pd.read_csv(f)
+        metrics['filename'] = f
         results[tf_name] = metrics
+        n_paths += 1
+
+    print('# paths loaded', n_paths)
 
     r2_y_vars = ['r2_counts', 'r2_foldchange', 'r2_enr', 'r2_fc', 'pearson_foldchange']
     params_x = ['n_epochs', 'n_kernels', 'learning_rate', 'batch_size']
+
+    print(results)
 
     # PLOT #1. one file for each tf. r2 values wrt all hyperparams
     for tf in tf_names:
@@ -57,5 +64,6 @@ if __name__ == '__main__':
         g.savefig(plot_name)
         print(f'Saved {plot_name}.')
 
-
-
+    # save concatenate dataframe to output
+    res = pd.concat(results.values()).reset_index(drop=True)
+    res.to_csv(args.output + '/results.tsv.gz', sep='\t')

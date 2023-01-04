@@ -29,18 +29,14 @@ if __name__ == '__main__':
     parser.add_argument('--out_tsv', required=True, help='output path for metrics')
     parser.add_argument('--early_stopping', default=100, help='# epochs for early stopping', type=int)
     parser.add_argument('--experiment', help='the experiment type we are going to model', required=True)
-
     parser.add_argument('--is_count_data', default=True)
-
     parser.add_argument('--outdense', default=False)
-
     parser.add_argument('--use_mono', help='using mononucleotide features', default=True)
     parser.add_argument('--use_dinuc', help='using dinucleotide features', default=False)
     parser.add_argument('--dinuc_mode', help='using dinucleotide features', default='local')
     parser.add_argument('--n_epochs', nargs='+', default=[50], help='# of epochs for training', type=int)
     parser.add_argument('--batch_sizes', nargs='+', default=[32], help='batch sizes for training', type=int)
     parser.add_argument('--learning_rates', nargs='+', default=[0.001], help='learning rates for training', type=float)
-
     parser.add_argument('--n_kernels', nargs='+', default=[1], help='# of kernels for training', type=int)
 
     # Use a GPU if available, as it should be faster.
