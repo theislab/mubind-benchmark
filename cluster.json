@@ -1,0 +1,20 @@
+{
+    "__default__" :
+    {
+        "time": "00:30:00",
+        "partition" : "cpu_p",
+        "qos": "icb",
+        "mem": "20GB",
+        "nice": 10000,
+        "output": "output/cluster_logs/{rule}.{wildcards}.out",
+        "error": "output/cluster_logs/{rule}.{wildcards}.err",
+        "cores": 2,
+    },
+    "fit_model":
+    {
+        "time": "02:00:00",
+        "partition" : "gpu_p",
+        "qos": "gpu",
+    }
+
+}
