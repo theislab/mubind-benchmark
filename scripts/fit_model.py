@@ -29,6 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('--out_tsv', required=True, help='output path for metrics')
     parser.add_argument('--early_stopping', default=100, help='# epochs for early stopping', type=int)
     parser.add_argument('--experiment', help='the experiment type we are going to model', required=True)
+    parser.add_argument('--width', help='the default width for filters', default=20, type=int)
     parser.add_argument('--is_count_data', default=True)
     parser.add_argument('--outdense', default=False)
     parser.add_argument('--use_mono', help='using mononucleotide features', default=True)
@@ -51,7 +52,7 @@ if __name__ == '__main__':
 
     out_model = args.out_model
     if not os.path.exists(out_model):
-        os.mkdir(out_model)
+        os.makedirs(out_model)
 
     metrics = []
     for (n_epochs, lr, batch_size, n_kernels) in itertools.product(args.n_epochs, args.learning_rates, args.batch_sizes,
@@ -91,10 +92,11 @@ if __name__ == '__main__':
                 wd = [0.01, ] + [0.001] * (n_kernels - 1)
                 model, best_loss = mb.tl.optimize_iterative(train,
                                                             device,
-                                                            show_logo=False, log_each=50,
+                                                            show_logo=False, log_each=50, w=args.width,
                                                             num_epochs=n_epochs, n_kernels=n_kernels, weight_decay=wd,
                                                             use_mono=args.use_mono, use_dinuc=args.use_dinuc,
                                                             dinuc_mode=args.dinuc_mode,
+
                                                             early_stopping=args.early_stopping, lr=lr)
 
                 torch.save(model.state_dict(), model_path)

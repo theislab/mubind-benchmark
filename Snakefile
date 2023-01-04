@@ -3,9 +3,9 @@ from pipeline_config import *
 from os.path import join
 
 # configfile: "config_test.yaml"
-# cfg = ParsedConfig(config, gene_names='gene_names_all.txt')
+cfg = ParsedConfig(config, gene_names='gene_names_all.txt')
 # cfg = ParsedConfig(config, gene_names='gene_names_cardiac_complexes.txt')
-cfg = ParsedConfig(config, gene_names='gene_names_test.txt')
+# cfg = ParsedConfig(config, gene_names='gene_names_test.txt')
 
 
 rule all:
@@ -61,12 +61,13 @@ rule fit_model:
         batch_sizes = expand('{batch_sizes}', batch_sizes=cfg.HYPERPARAM['batch_sizes']),
         learning_rates = expand('{learning_rates}', learning_rates=cfg.HYPERPARAM['learning_rates']),
         n_kernels = expand('{n_kernels}', n_kernels=cfg.HYPERPARAM['n_kernels']),
+        width= expand('{n_kernels}',n_kernels=cfg.HYPERPARAM['width']),
     shell:
         """
         {params.cmd} {input.script} -i {input.queries} --experiment {params.experiment} --out_model {params.model} \
         --out_tsv {output.metrics} --use_mono {params.use_mono} --use_dinuc {params.use_dinuc} \
         --dinuc_mode {params.dinuc_mode} --n_epochs {params.n_epochs} --batch_sizes {params.batch_sizes} \
-        --learning_rates {params.learning_rates} --n_kernels {params.n_kernels} # 1> {log}
+        --learning_rates {params.learning_rates} --n_kernels {params.n_kernels} --width {params.width} # 1> {log}
         """
 
 rule refine_model:

@@ -53,6 +53,7 @@ if __name__ == '__main__':
     # make output diretory
     outdir = os.path.abspath(os.path.join(args.out_tsv, os.pardir))
     if not os.path.exists(outdir):
+        os.mkdir(outdir)
         os.makedirs(outdir + '/models')
 
     criterion = mb.tl.PoissonLoss()
@@ -139,7 +140,6 @@ if __name__ == '__main__':
                                                                               'r2_counts', 'r2_foldchange', 'r2_enr', 'r2_fc', 'pearson_foldchange',
                                                                               'running_time'])
 
-    model_path = f'{outdir}/models/model.h5'
     pkl_path = model_path.replace('.h5', '.pkl')
     motif_img_path = model_path.replace('.h5', '_filters.png')
 
