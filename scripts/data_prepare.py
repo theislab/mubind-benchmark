@@ -7,6 +7,7 @@ import bindome as bd
 import sys
 import os
 from pathlib import Path
+import scipy
 
 if __name__ == '__main__':
     """
@@ -153,15 +154,37 @@ if __name__ == '__main__':
                             next_data_sample = next_data_sample.set_index('seq')
                             # print(next_data.head())
 
-                            # not needed for the current model, because the enrichment is not predicted
-                            # next_data = mb.tl.calculate_enrichment(next_data, cols=next_data.columns[1:])
+                            # remove indexes with N as those are not encoded with mb.tl.string2bin
+                            print(next_data_sample.head())
+                            if next_data_sample.index.astype(str).str.contains('N').any():
+                                print('removing Ns...before/after')
+                                print(next_data_sample.shape[0])
+                                next_data_sample = next_data_sample[~next_data_sample.index.str.contains('N')]
+                                print(next_data_sample.shape[0])
 
                             # assign batch and data type
                             next_data_sample['batch'] = 1
                             next_data_sample['is_count_data'] = 1
 
                             next_outpath = str(queries_directory) + '/' + k_model + '_%s.tsv.gz' % n_sample
-                            next_data_sample.to_csv(next_outpath, sep='\t')
+
+                            next_outpath_sparse = next_outpath.replace(".tsv.gz", '_sparse.npz')
+                            next_outpath_rownames = next_outpath.replace(".tsv.gz", '_sparse_rownames_int.npz')
+                            next_outpath_colnames = next_outpath.replace(".tsv.gz", '_colnames.npz')
+
+                            X = scipy.sparse.csr_matrix(next_data_sample.to_numpy())
+                            colnames = np.array(next_data_sample.columns)
+                            rownames = np.array(next_data_sample.index)
+                            rownames_int = pd.Series(rownames).apply(mb.tl.string2bin)
+                            scipy.sparse.save_npz(next_outpath_sparse, X)
+                            np.savez(next_outpath_rownames, rownames_int)
+                            np.savez(next_outpath_colnames, colnames)
+
+                            print('next counts saved at')
+                            print(next_outpath_sparse)
+                            print(next_outpath_rownames)
+                            print(next_outpath_colnames)
+                            # next_data_sample.to_csv(next_outpath, sep='\t')
 
                             # repeats for each query (e.g. two in ALX1), want to save sep file for each query so should save file here
                             queries.append([tf_query, k_r0, library, next_outpath, n_sample, next_data_sample.shape[0]])
@@ -172,5 +195,7 @@ if __name__ == '__main__':
 
     queries = pd.DataFrame(queries, columns=['tf_name', 'r0', 'library', 'counts_path', 'n_sample_parm', 'n_sample_obs'])
     queries.to_csv(queries_tsv_outpath, sep='\t')
-    sys.exit()
+
+    print('queries saved at')
+    print(queries_tsv_outpath)
 

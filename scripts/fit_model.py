@@ -9,6 +9,7 @@ import torch.optim as topti
 import torch.utils.data as tdata
 import matplotlib.pyplot as plt
 import pickle
+import scipy
 
 # Use a GPU if available, as it should be faster.
 # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -67,7 +68,20 @@ if __name__ == '__main__':
             pkl_path = model_path.replace('.h5', '.pkl')
             motif_img_path = model_path.replace('.h5', '_filters.png')
 
-            data = pd.read_csv(counts_path, sep=',' if 'simulated' in counts_path else '\t', index_col=0)
+
+            # read sparse data
+            # data = pd.read_csv(counts_path, sep=',' if 'simulated' in counts_path else '\t', index_col=0)
+            sparse_counts_path = counts_path.replace(".tsv.gz", '_sparse.npz')
+            rownames_path = counts_path.replace(".tsv.gz", '_sparse_rownames_int.npz')
+            colnames_path = counts_path.replace(".tsv.gz", '_colnames.npz')
+            X = scipy.sparse.load_npz(sparse_counts_path)
+            rownames_int = np.load(rownames_path, allow_pickle=True)
+            rownames_int = rownames_int['arr_0']
+            print(type(rownames_int))
+            row_names = pd.Series(rownames_int).apply(mb.tl.bin2string)
+            col_names = np.load(colnames_path, allow_pickle=True)
+            col_names = col_names['arr_0']
+            data = pd.DataFrame(X.toarray(), index=row_names, columns=col_names)
 
             if 'simulated' not in counts_path:
                 n_rounds = len(data.columns) - 2
