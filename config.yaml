@@ -7,13 +7,15 @@ HYPERPARAM:
     n_epochs: [200]
     batch_sizes: [512]
     learning_rates: [0.01] # , 0.01, 0.1]
-    n_kernels: [2]
+    n_kernels: [4]
+    seq_bias: True # it includes one kernel for seqbias modeling
     width: 20
-    early_stopping: 100
+    early_stopping: None
     use_mono: True
-    use_dinuc: False,
-    dinuc_mode: local
-    n_sample: [1_000,] # 10_000,] # 15_000] #  10_000] #  100_000, 1_000_000, 10_000_000]
+    use_dinuc: True
+    dinuc_mode: full
+    use_prev: False
+    n_sample: [150_000,] #  100_000, 1_000_000] # 15_000] #  10_000] #  100_000, 1_000_000, 10_000_000]
 
 EXPERIMENT:
   SELEX:

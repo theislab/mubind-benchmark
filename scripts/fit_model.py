@@ -28,13 +28,16 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--queries', help='path to queries.tsv with entries')
     parser.add_argument('--out_model', required=True, help='directory to save learned model')
     parser.add_argument('--out_tsv', required=True, help='output path for metrics')
-    parser.add_argument('--early_stopping', default=100, help='# epochs for early stopping', type=int)
+    # default if 1/10 of regular epochs
+    parser.add_argument('--early_stopping', default=None, help='# epochs for early stopping', type=int)
     parser.add_argument('--experiment', help='the experiment type we are going to model', required=True)
     parser.add_argument('--width', help='the default width for filters', default=20, type=int)
     parser.add_argument('--is_count_data', default=True)
     parser.add_argument('--outdense', default=False)
+    parser.add_argument('--use_prev', default=False)
     parser.add_argument('--use_mono', help='using mononucleotide features', default=True)
     parser.add_argument('--use_dinuc', help='using dinucleotide features', default=False)
+    parser.add_argument('--seq_bias', help='sequencing bias', default=False)
     parser.add_argument('--dinuc_mode', help='using dinucleotide features', default='local')
     parser.add_argument('--n_epochs', nargs='+', default=[50], help='# of epochs for training', type=int)
     parser.add_argument('--batch_sizes', nargs='+', default=[32], help='batch sizes for training', type=int)
@@ -101,16 +104,32 @@ if __name__ == '__main__':
             train = tdata.DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True)
             ### steps to train model
             print(exists(model_path), model_path)
-            if not exists(model_path):
-                print('training starts...')
+            if not exists(model_path) or not args.use_prev:
+                print('training starts (output missing, or overwrite)...')
                 wd = [0.01, ] + [0.001] * (n_kernels - 1)
+
+                seq_bias = args.seq_bias
+
+                opt_kernel_shift = True
+                opt_kernel_length = True
+                width = 20
+                if seq_bias:
+                    opt_kernel_shift = [0] + [0] + [1] * (n_kernels - 1)
+                    opt_kernel_length = [0] + [0] + [1] * (n_kernels - 1)
+                    args.kernels = [0, 2] + [args.width] * (n_kernels - 1)
+
+                if args.early_stopping is None:
+                    args.early_stopping = int(n_epochs / 10)
+
                 model, best_loss = mb.tl.optimize_iterative(train,
                                                             device,
-                                                            show_logo=False, log_each=50, w=args.width,
+                                                            show_logo=False, log_each=1, w=args.width,
+                                                            opt_kernel_length=opt_kernel_length,
+                                                            opt_kernel_shift=opt_kernel_shift,
                                                             num_epochs=n_epochs, n_kernels=n_kernels, weight_decay=wd,
                                                             use_mono=args.use_mono, use_dinuc=args.use_dinuc,
                                                             dinuc_mode=args.dinuc_mode,
-
+                                                            kernels=args.kernels,
                                                             early_stopping=args.early_stopping, lr=lr)
 
                 torch.save(model.state_dict(), model_path)
@@ -140,11 +159,12 @@ if __name__ == '__main__':
                 plt.clf() # necessary to avoid memory kill
                 plt.close()
 
-                # scatter k=9
-                mb.pl.kmer_enrichment(model, train, log_scale=False, style='scatter', show=False, k=9)
-                plt.savefig(motif_img_path.replace('_filters.png', '_scatter_k9.png'))
-                plt.clf() # necessary to avoid memory kill
-                plt.close()
+                # scatter [7, 9]
+                for k in range(7, 10):
+                    mb.pl.kmer_enrichment(model, train, log_scale=False, style='scatter', show=False, k=k)
+                    plt.savefig(motif_img_path.replace('_filters.png', '_scatter_k%i.png' % k))
+                    plt.clf() # necessary to avoid memory kill
+                    plt.close()
 
             r2_dict = mb.pl.kmer_enrichment(model, train, k=8, show=False)
             plt.clf()
