@@ -1,4 +1,4 @@
-name: multibind
+name: mubind
 channels:
     - conda-forge
     - anaconda
@@ -15,3 +15,4 @@ dependencies:
     - numpy
     - seaborn
     - scanpy
+    - pulp<2.8

@@ -10,6 +10,8 @@ import torch.utils.data as tdata
 import matplotlib.pyplot as plt
 import pickle
 import scipy
+import argparse
+import os
 
 # Use a GPU if available, as it should be faster.
 # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -19,8 +21,6 @@ if __name__ == '__main__':
     read fastq files, prepare input files for modeling
     """
 
-    import argparse
-    import os
 
     parser = argparse.ArgumentParser(
         description='Precompute diffusion connectivities for knn data integration methods.')
@@ -117,20 +117,27 @@ if __name__ == '__main__':
                     opt_kernel_shift = [0] + [0] + [1] * (n_kernels - 1)
                     opt_kernel_length = [0] + [0] + [1] * (n_kernels - 1)
                     args.kernels = [0, 2] + [args.width] * (n_kernels - 1)
+                    wd = [0.01, 0.001] + [0.001] * (n_kernels - 1)
 
                 if args.early_stopping is None:
                     args.early_stopping = int(n_epochs / 10)
 
-                model, best_loss = mb.tl.optimize_iterative(train,
-                                                            device,
+                model = mb.models.Mubind.make_model(train, n_kernels, mb.tl.PoissonLoss(),
+                                                    kernels=args.kernels,
+                                                    use_dinuc=args.use_dinuc,
+                                                    device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
+                                                    dinuc_mode=args.dinuc_mode).cuda()
+                                                    # optimize_exp_barrier=optimize_exp_barrier,
+                                                    # optimize_kernel_rel = opt_kernel_shift,
+                                                    # optimize_sym_weight = optimize_sym_weight).cuda()
+
+                model, best_loss = model.optimize_iterative(train,
                                                             show_logo=False, log_each=1, w=args.width,
                                                             opt_kernel_length=opt_kernel_length,
                                                             opt_kernel_shift=opt_kernel_shift,
-                                                            num_epochs=n_epochs, n_kernels=n_kernels, weight_decay=wd,
+                                                            n_epochs=n_epochs, weight_decay=wd,
                                                             use_mono=args.use_mono, use_dinuc=args.use_dinuc,
-                                                            dinuc_mode=args.dinuc_mode,
-                                                            kernels=args.kernels,
-                                                            early_stopping=args.early_stopping, lr=lr)
+                                                            early_stopping=args.early_stopping, lr=lr, use_tqdm=True)
 
                 torch.save(model.state_dict(), model_path)
                 pickle.dump(model, open(pkl_path, 'wb'))
@@ -146,7 +153,7 @@ if __name__ == '__main__':
                 # disable warnings
                 import warnings
                 warnings.filterwarnings("ignore")
-                mb.pl.conv(model, show=False, figsize=[20, 10], dinuc_mode='complex')
+                mb.pl.logo(model, show=False, figsize=[20, 10], dinuc_mode='complex')
                 plt.savefig(motif_img_path)
                 plt.clf() # necessary to avoid memory kill
                 plt.close()
@@ -188,3 +195,8 @@ if __name__ == '__main__':
                                                                               'r2_counts', 'r2_foldchange', 'r2_enr', 'r2_fc', 'pearson_foldchange',
                                                                               'running_time'])
     metrics.to_csv(args.out_tsv)
+
+    # print('done...')
+    
+    # assert False
+    # print('')

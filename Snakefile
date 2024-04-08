@@ -4,8 +4,8 @@ from os.path import join
 
 # configfile: "config_test.yaml"
 # cfg = ParsedConfig(config, gene_names='gene_names_all.txt')
-cfg = ParsedConfig(config, gene_names='gene_names_cardiac_complexes.txt')
-# cfg = ParsedConfig(config, gene_names='gene_names_test.txt')
+# cfg = ParsedConfig(config, gene_names='gene_names_cardiac_complexes.txt')
+cfg = ParsedConfig(config, gene_names='gene_names_test.txt')
 
 
 rule all:

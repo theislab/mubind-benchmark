@@ -116,13 +116,25 @@ if __name__ == '__main__':
 
                         next_r0 = reads_zero[k_r0].copy()
                         new_cols = ['seq', k_r0]
+                        next_r0.columns = ['seq', k_r0]
+                        print(next_r0.head())
                         next_data = None
+                        print('')
                         for k_tf in reads_tf:
+                            print(k_tf)
                             # print(next_r0.head())
                             # print(reads_tf[k_tf].head())
-                            next_data = (next_r0 if next_data is None else next_data).merge(reads_tf[k_tf],
-                                                                                            on='seq',
-                                                                                            how='outer').fillna(0)
+                            next_data = (next_r0 if next_data is None else next_data)
+
+                            next_data_tf = reads_tf[k_tf].copy()
+                            next_data_tf.columns = ['seq', k_tf]
+                            print(next_data.columns)
+                            next_data = next_data.merge(next_data_tf,
+                                                        on='seq',
+                                                        how='outer').fillna(0)
+                            
+                            print(next_data.head())
+                            print('')
                             new_cols.append(k_tf)
                         next_data.columns = new_cols
 
