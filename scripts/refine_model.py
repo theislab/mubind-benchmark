@@ -27,7 +27,7 @@ if __name__ == '__main__':
         description='Precompute diffusion connectivities for knn data integration methods.')
 
     parser.add_argument('-i', '--queries', help='path to queries.tsv with entries')
-    parser.add_argument('--out_model', required=True, help='directory to save learned model')
+    parser.add_argument('--out_model', required=True, help='directory to save refined model')
     parser.add_argument('--out_tsv', required=True, help='output path for metrics')
     parser.add_argument('--early_stopping', default=100, help='# epochs for early stopping', type=int)
     parser.add_argument('--experiment', help='the experiment type we are going to model', required=True)
@@ -73,12 +73,27 @@ if __name__ == '__main__':
         metrics.to_csv(args.out_tsv)
         sys.exit()
 
+    import scipy
     df = []
     batch = 0
     batch_by_name = {}
     for p in input_paths:
         # print(p)
-        df2 = pd.read_csv(p, sep='\t', index_col=0)  # .head(100)
+
+        counts_path = p
+        sparse_counts_path = counts_path.replace(".tsv.gz", '_sparse.npz')
+        rownames_path = counts_path.replace(".tsv.gz", '_sparse_rownames_int.npz')
+        colnames_path = counts_path.replace(".tsv.gz", '_colnames.npz')
+        X = scipy.sparse.load_npz(sparse_counts_path)
+        rownames_int = np.load(rownames_path, allow_pickle=True)
+        rownames_int = rownames_int['arr_0']
+        print(type(rownames_int))
+        row_names = pd.Series(rownames_int).apply(mb.tl.bin2string)
+        col_names = np.load(colnames_path, allow_pickle=True)
+        col_names = col_names['arr_0']
+        df2 = pd.DataFrame(X.toarray(), index=row_names, columns=col_names)
+        # df2 = pd.read_csv(p, sep='\t', index_col=0)  # .head(100)
+
         assert 'batch' in df2
         # print(df2.columns)
         # df2 = df2.sample(100000)
@@ -88,11 +103,11 @@ if __name__ == '__main__':
         batch_by_name[batch] = os.path.basename(p)
         df2['n_rounds'] = n_rounds
         # df2 = mb.pp.sample_rounds(df2, n_rounds, n_sample_per_round)
-        print(df2.shape)
-        print(p, df2.shape, n_rounds)
+        # print(df2.shape)
+        # print(p, df2.shape, n_rounds)
         batch += 1
         df.append(df2)
-
+    
     df = pd.concat(df)
     df = df[[c for c in df.columns if not c in ['batch', 'is_count_data', 'n_rounds']] + ['batch', 'is_count_data',
                                                                                           'n_rounds']]
@@ -109,7 +124,7 @@ if __name__ == '__main__':
     # load the prior filters
     filters = pickle.load(open(args.filters, 'rb'))
 
-    model = mb.models.Multibind(
+    model = mb.models.Mubind(
         datatype="selex",
         kernels=[0] + [m.shape[-1] for m in filters],
         n_rounds=n_rounds,
@@ -130,21 +145,22 @@ if __name__ == '__main__':
 
 
     # fit the model using the data
-
-
-
     # metrics by batch, using combined model
     metrics = []
     metrics = pd.DataFrame(metrics, columns=list(queries.columns[:-1]) + ['batch_size', 'learning_rate', 'n_epochs',
                                                                               'n_kernels', 'best_loss',
                                                                               'r2_counts', 'r2_foldchange', 'r2_enr', 'r2_fc', 'pearson_foldchange',
                                                                               'running_time'])
+    
+    refined_model_outdir = args.out_model.replace('models', 'refine_model')
+    # print(os.path.exists(refined_model_outdir), refined_model_outdir)
 
-    pkl_path = model_path.replace('.h5', '.pkl')
-    motif_img_path = model_path.replace('.h5', '_filters.png')
+    refined_model_path_h5 = os.path.join(refined_model_outdir, 'model.h5')
+    refined_model_path_pkl = os.path.join(refined_model_outdir, 'model.pkl')
+    motif_img_path = refined_model_path_h5.replace('.h5', '_filters.png')
 
-    if not exists(model_path):
-        torch.save(model.state_dict(), model_path)
-        pickle.dump(model, open(pkl_path, 'wb'))
+    if not exists(refined_model_path_h5):
+        torch.save(model.state_dict(), refined_model_path_h5)
+        pickle.dump(model, open(refined_model_path_pkl, 'wb'))
 
     metrics.to_csv(args.out_tsv)
