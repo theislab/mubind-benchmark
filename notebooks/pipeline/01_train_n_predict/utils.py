@@ -1,13 +1,14 @@
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import average_precision_score
 import pandas as pd
+import os
 
-def get_datasets():
-    path_by_dataset = {'organoids': '/mnt/f/workspace/theislab/mubind/data/organoids_treutlein_dataset/RNA_ATAC_metacells_sce_peaks_obs2000_var4000.h5ad',
-                       'gbm': '/mnt/f/workspace/theislab/mubind/data/gbm_multiome_scdori/23_01_23_atac_compressed_n1000.h5ad',
-                       'noack_2022': '/mnt/f/workspace/theislab/mubind/data/noack_2022/*/merged_scATAC_integrated_cicero_faye_chong_obs*_var*.h5ad',
-                       'pancreatic_endocrinogenesis': '/mnt/f/workspace/theislab/mubind/data/pancreatic_endocrinogenesis/*/pancreas_multiome_2022_processed_atac_obs*_var*.h5ad',
-                       'pbmc': '/mnt/f/workspace/theislab/mubind/data/pbmc/*/processed_laura_2023_obs*_var*.h5ad'}
+def get_datasets(data_directory='./'):
+    path_by_dataset = {'organoids': os.path.join(data_directory, 'organoids_treutlein_dataset/RNA_ATAC_metacells_sce_peaks_obs2000_var4000.h5ad'),
+                       'gbm': os.path.join(data_directory, 'gbm_multiome_scdori/23_01_23_atac_compressed_n1000.h5ad'),
+                       'noack_2022': os.path.join(data_directory, 'noack_2022/*/merged_scATAC_integrated_cicero_faye_chong_obs*_var*.h5ad'),
+                       'pancreatic_endocrinogenesis': os.path.join(data_directory, 'pancreatic_endocrinogenesis/*/pancreas_multiome_2022_processed_atac_obs*_var*.h5ad'),
+                       'pbmc': os.path.join(data_directory, 'pbmc/*/processed_laura_2023_obs*_var*.h5ad')}
     return path_by_dataset
 
 def get_auroc(model, dataloader):
