@@ -15,15 +15,17 @@ def get_auroc(model, dataloader):
     import mubind as mb
     pred = mb.tl.kmer_enrichment(model, dataloader)
     pred = pred[[c for c in pred if c.startswith('p')]]            
-    y = dataloader.dataset.rounds
-    y[y > 0] = 1 
+    
+    y = dataloader.dataset.rounds.copy()
+    y[y > 0] = 1
     return roc_auc_score(y.flatten(), pred.values.flatten())
 
 def get_auprc(model, dataloader):
     import mubind as mb
+    print('auprc...')
     pred = mb.tl.kmer_enrichment(model, dataloader)
     pred = pred[[c for c in pred if c.startswith('p')]]            
-    y = dataloader.dataset.rounds
+    y = dataloader.dataset.rounds.copy()
     y[y > 0] = 1 
     return average_precision_score(y.flatten(), pred.values.flatten())
 
