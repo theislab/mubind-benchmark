@@ -22,12 +22,51 @@ def get_auroc(model, dataloader):
 
 def get_auprc(model, dataloader):
     import mubind as mb
-    print('auprc...')
     pred = mb.tl.kmer_enrichment(model, dataloader)
     pred = pred[[c for c in pred if c.startswith('p')]]            
     y = dataloader.dataset.rounds.copy()
     y[y > 0] = 1 
     return average_precision_score(y.flatten(), pred.values.flatten())
+    
+
+from sklearn.preprocessing import LabelBinarizer
+import sklearn
+import numpy as np
+def get_auprc_multiclass(model, dataloader):
+    # multiclass
+    import mubind as mb
+    pred = mb.tl.kmer_enrichment(model, dataloader)
+    pred = pred[[c for c in pred if c.startswith('p')]]            
+    y = dataloader.dataset.rounds.copy()    
+    y_flatten = y.flatten()
+    pred_flatten = pred.values.flatten().round()
+    
+    label_binarizer = LabelBinarizer().fit(np.concatenate((y_flatten, pred_flatten)))
+    y_onehot_test = label_binarizer.transform(y_flatten)
+    pred_onehot = label_binarizer.transform(pred_flatten)
+    # y_onehot_test.shape  # (n_samples, n_classes)
+    
+    print(y_onehot_test.shape)
+    print(pred_onehot.shape)
+    pr_auc_multi= sklearn.metrics.average_precision_score(y_onehot_test, pred_onehot)
+    return pr_auc_multi
+
+def get_auroc_multiclass(model, dataloader):
+    # multiclass
+    import mubind as mb
+    pred = mb.tl.kmer_enrichment(model, dataloader)
+    pred = pred[[c for c in pred if c.startswith('p')]]            
+    y = dataloader.dataset.rounds.copy()
+    y_flatten = y.flatten()
+    pred_flatten = pred.values.flatten().round()
+    
+    label_binarizer = LabelBinarizer().fit(np.concatenate((y_flatten, pred_flatten)))
+    y_onehot_test = label_binarizer.transform(y_flatten)
+    pred_onehot = label_binarizer.transform(pred_flatten)
+    # y_onehot_test.shape  # (n_samples, n_classes)
+    roc_auc_multi = roc_auc_score(y_onehot_test, pred_onehot)
+    return roc_auc_multi
+
 
 def prepare_df(seqs, adata):
     # remove Ns
