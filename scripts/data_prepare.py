@@ -80,8 +80,6 @@ if __name__ == '__main__':
                 print(tf)
 
                 for library, grp in data.groupby('library'):
-                    # print(grp)
-
                     try:
                         data_sel_tf = grp[(grp['tf_name'] == tf)]  # & (grp['cycle'] == '1')]
                     except:
