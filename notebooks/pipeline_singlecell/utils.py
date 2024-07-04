@@ -2,6 +2,8 @@ from sklearn.metrics import roc_auc_score
 from sklearn.metrics import average_precision_score
 import pandas as pd
 import os
+import numpy as np
+
 
 def get_datasets(data_directory='./'):
     path_by_dataset = {'organoids': os.path.join(data_directory, 'organoids_treutlein_dataset/RNA_ATAC_metacells_sce_peaks_obs2000_var4000.h5ad'),
@@ -10,6 +12,41 @@ def get_datasets(data_directory='./'):
                        'pancreatic_endocrinogenesis': os.path.join(data_directory, 'pancreatic_endocrinogenesis/*/pancreas_multiome_2022_processed_atac_obs*_var*.h5ad'),
                        'pbmc': os.path.join(data_directory, 'pbmc/*/processed_laura_2023_obs*_var*.h5ad')}
     return path_by_dataset
+
+def iterative_metric_calc(pred, dataloader, function, lightweight_memory = True):
+    if not lightweight_memory:    
+        y = dataloader.dataset.rounds.copy()
+        y_flatten = y.flatten()
+        pred_flatten = pred.values.flatten().round()
+
+        label_binarizer = LabelBinarizer().fit(np.concatenate((y_flatten, pred_flatten)))
+        y_onehot_test = label_binarizer.transform(y_flatten)
+        pred_onehot = label_binarizer.transform(pred_flatten)
+        # y_onehot_test.shape  # (n_samples, n_classes)
+        metric = function(y_onehot_test, pred_onehot)
+        return metric
+    else:
+        print('calculate metric with iterative approach...')
+        metric_sample = []
+        pred_values = pred.values
+        step = 1500
+        for yi in range(0, dataloader.dataset.rounds.shape[0], step):
+            print(yi, 'out of', pred_values.shape[0])            
+            y = dataloader.dataset.rounds[yi: min(yi + step, dataloader.dataset.rounds.shape[0]),:].copy()                
+
+            print(len(set(y.flatten())))
+            
+            y_flatten = y.flatten()
+
+            pred_flatten = pred_values[yi: min(yi + step, pred_values.shape[0]),:].flatten().round()
+
+            label_binarizer = LabelBinarizer().fit(np.concatenate((y_flatten, pred_flatten)))
+            y_onehot_test = label_binarizer.transform(y_flatten)
+            pred_onehot = label_binarizer.transform(pred_flatten)
+            # y_onehot_test.shape  # (n_samples, n_classes)
+            metric_sample.append(function(y_onehot_test, pred_onehot))
+        return np.mean(metric_sample)
+            
 
 def get_auroc(model, dataloader):
     import mubind as mb
@@ -25,18 +62,18 @@ def get_auprc(model, dataloader):
     pred = mb.tl.kmer_enrichment(model, dataloader)
     pred = pred[[c for c in pred if c.startswith('p')]]            
     y = dataloader.dataset.rounds.copy()
-    y[y > 0] = 1 
+    y[y > 0] = 1
     return average_precision_score(y.flatten(), pred.values.flatten())
     
 
 from sklearn.preprocessing import LabelBinarizer
 import sklearn
-import numpy as np
 def get_auprc_multiclass(model, dataloader):
     # multiclass
     import mubind as mb
     pred = mb.tl.kmer_enrichment(model, dataloader)
     pred = pred[[c for c in pred if c.startswith('p')]]            
+<<<<<<< HEAD:notebooks/pipeline/utils.py
     y = dataloader.dataset.rounds.copy()    
     y_flatten = y.flatten()
     pred_flatten = pred.values.flatten().round()
@@ -49,6 +86,9 @@ def get_auprc_multiclass(model, dataloader):
     # print(y_onehot_test.shape)
     # print(pred_onehot.shape)
     pr_auc_multi= sklearn.metrics.average_precision_score(y_onehot_test, pred_onehot)
+=======
+    pr_auc_multi= iterative_metric_calc(pred, dataloader, average_precision_score)    
+>>>>>>> c32688d429128301f53fbdc76fc0dde828f3c819:notebooks/pipeline_singlecell/utils.py
     return pr_auc_multi
 
 def get_auroc_multiclass(model, dataloader):
@@ -56,15 +96,7 @@ def get_auroc_multiclass(model, dataloader):
     import mubind as mb
     pred = mb.tl.kmer_enrichment(model, dataloader)
     pred = pred[[c for c in pred if c.startswith('p')]]            
-    y = dataloader.dataset.rounds.copy()
-    y_flatten = y.flatten()
-    pred_flatten = pred.values.flatten().round()
-    
-    label_binarizer = LabelBinarizer().fit(np.concatenate((y_flatten, pred_flatten)))
-    y_onehot_test = label_binarizer.transform(y_flatten)
-    pred_onehot = label_binarizer.transform(pred_flatten)
-    # y_onehot_test.shape  # (n_samples, n_classes)
-    roc_auc_multi = roc_auc_score(y_onehot_test, pred_onehot)
+    roc_auc_multi= iterative_metric_calc(pred, dataloader, roc_auc_score)    
     return roc_auc_multi
 
 
