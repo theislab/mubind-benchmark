@@ -46,8 +46,8 @@ def get_auprc_multiclass(model, dataloader):
     pred_onehot = label_binarizer.transform(pred_flatten)
     # y_onehot_test.shape  # (n_samples, n_classes)
     
-    print(y_onehot_test.shape)
-    print(pred_onehot.shape)
+    # print(y_onehot_test.shape)
+    # print(pred_onehot.shape)
     pr_auc_multi= sklearn.metrics.average_precision_score(y_onehot_test, pred_onehot)
     return pr_auc_multi
 
